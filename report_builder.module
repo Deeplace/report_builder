@@ -1,0 +1,328 @@
+<?php
+
+function report_builder_autoloader($class) {
+  $path =  drupal_get_path('module', 'report_builder');
+  if(file_exists($path . '/reports/' . $class . '.class.inc')) {
+    include $path . '/reports/' . $class . '.class.inc';
+  }
+}
+
+spl_autoload_register('report_builder_autoloader');
+
+/**
+ * Implements hook_menu()
+ */
+function report_builder_menu() {
+  $items = array();
+
+  $items['admin/settings/report-builder'] = array(
+    'title' => 'Report builder',
+    'description' => 'Report settings form',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('report_builder_form'),
+    'access arguments' => array('create report'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'report_builder.forms.inc'
+  );
+
+
+  $items['reports-view'] = array(
+    'title' => t('Report view'),
+    'description' => 'Report settings form',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('report_view_form'),
+    'access arguments' => array('view report'),
+    'file' => 'report_view.forms.inc',
+	'menu_name' => 'main-menu',
+    'type' => MENU_NORMAL_ITEM,
+   );
+ 
+   $items['reports-view/region'] = array(
+    'title' => 'Select region and data',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('report_view_form_region'),
+    'access arguments' => array('view report'),
+	'file' => 'report_view.forms.inc',
+    'type' => MENU_CALLBACK,
+  );
+  
+  $items['admin/settings/report-list'] = array(
+    'title' => 'Report list',
+    'description' => 'Report list page',
+	'page callback'=> 'drupal_get_form',
+    'page arguments' => array('report_builder_list'),
+    'access arguments' => array('create report'),
+    'type' => MENU_NORMAL_ITEM,
+	'file' => 'report_view.forms.inc',
+  );
+
+  $items['admin/settings/report/%rep_name/edit'] = array(
+    'title' => 'Edit report',
+    'description' => 'Report settings form',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('report_builder_form', 3),
+    'access arguments' => array('create report'),
+    'type' => MENU_CALLBACK,
+    'file' => 'report_builder.forms.inc',
+
+  );
+
+
+  $items['admin/settings/report/%rep_name/delete'] = array(
+    'title' => 'Delete report',
+    'description' => 'Report settings form',
+    'page callback' => 'report_builder_report_delete',
+    'page arguments' => array(3),
+    'access arguments' => array('create report'),
+    'type' => MENU_CALLBACK,
+    'file' => 'report_view.forms.inc'
+  );
+  
+  
+  $items['reports/%rep_name/filter-form'] = array(
+    'title' => 'Report filter',
+    'description' => 'Report filter form',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('report_builder_filter_form', 1),
+    'access arguments' => array('view report'),
+    'type' => MENU_CALLBACK,
+    'file' => 'report_builder.forms.inc'
+  );
+  $items['reports/%rep_name/view'] = array(
+    'title' => 'Report',
+    'description' => 'Report display',
+    'page callback' => 'report_builder_view_report',
+    'page arguments' => array(1),
+    'access arguments' => array('view report'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Loads report by name
+ */
+function rep_name_load($rep_name) {
+  //return new Report_Builder($rep_name);
+  return Report_Factory::create_report($rep_name);
+}
+
+/**
+ * Implements hooK_permission()
+ */
+function report_builder_permission() {
+  return array(
+    'create report' => array(
+      'title' => t('Create report'),
+      'description' => t('Allows users to create reports'),
+    ),
+    'view report' => array(
+      'title' => t('View report'),
+      'description' => t('Allows users to view reports'),
+    ),
+  );
+}
+
+/**
+ * Generate report
+ *
+ * @param Report_Builder $report - report object @see rep_name_load() function
+ * @return array to render
+ */
+function report_builder_view_report($report) {
+  try {
+    if (!$report) {
+      drupal_set_message(t('No such report'));
+      return;
+    }
+    if (!empty($_SESSION['filters'])) {
+      $report->set_where($_SESSION['filters']);
+    }
+    drupal_set_title($report->get_title());
+    $data = $report->query_data();
+    $header = $report->get_header();
+    if ($_GET['xls'] == 1) {
+      report_builder_generate_xls($header, $data, $report->title);
+      return;
+    }
+  } catch(Exception $e) {
+    drupal_set_message(t($e->getMessage()), 'error');
+  }
+  return array(
+    'link' => array(
+      '#theme' => 'link',
+      '#text' => t('Export excel'),
+      '#path' => current_path(),
+      '#options' => array(
+        'attributes' => array('class' => array('xls-link')),
+        //REQUIRED:
+        'html' => FALSE,
+        'query' => array('xls' => 1)
+      ),
+    ),
+    'table' => array(
+      '#theme' => 'table',
+      '#rows' => array_merge($header, $data),
+      '#header' => array(),
+      '#empty' => t('No data for this report')
+    ),
+  );
+}
+
+function report_builder_report_delete($report) {
+  try {
+    $report->delete();
+    drupal_set_message(t('Report was deleted successfully!'));
+  } catch (Exception $e) {
+    drupal_set_message(t($e->getMessage()), 'error');
+  }
+  drupal_goto('admin/settings/report-list');
+}
+
+/**
+ * Exports report in xls
+ *
+ * @param array $header - header of report
+ * @param $rows - rows
+ * @param $title - report title
+ */
+function report_builder_generate_xls($header, $rows, $title) {
+
+  $path = 'sites/all/libraries/phpexcel/Classes/';
+  if(file_exists("{$path}/PHPExcel.php")) {
+    include_once(drupal_realpath("{$path}/PHPExcel.php"));
+  }
+  else {
+    watchdog('phpExcel', 'Cant load file !file', array('!file' => $path . "/PHPExcel.php"));
+    return '';
+  }
+  $pExcel = new PHPExcel();
+  $pExcel->setActiveSheetIndex(0);
+  $aSheet = $pExcel->getActiveSheet();
+
+  $excel_col = 0;
+  $excel_row = 1;
+
+  if(!empty($title)) {
+    $aSheet->mergeCells('A1:O1');
+    $title = strip_tags($title);
+    $title = htmlspecialchars_decode($title, ENT_QUOTES);
+    $aSheet->setCellValueByColumnAndRow($excel_col, $excel_row, $title);
+    $excel_col = 0;
+    $excel_row++;
+  }
+  $first_col = $last_col =  0;
+  if(is_array($header) && count($header)) {
+    foreach($header as $row) {
+      foreach ($row as $cell) {
+        if(is_array($cell)) {
+          $data = isset($cell['data']) ? $cell['data'] : '';
+        }
+        else {
+          $data = $cell;
+        }
+
+        $data = strip_tags($data);
+        $data = htmlspecialchars_decode($data, ENT_QUOTES);
+        $temp_cell = $aSheet->getCell(get_name_from_number($excel_col) . $excel_row);
+
+        foreach ($aSheet->getMergeCells() as $cells) {
+          if ($temp_cell->isInRange($cells)) {
+            list($first, $second) = explode(':', $cells);
+            if (($range = ord(substr($second, 0, -1)) - ord(substr($first, 0, -1))) == 0) {
+              $range = substr($second, -1) - substr($first, -1);
+            }
+            $excel_col+=$range;
+          }
+        }
+
+
+        $aSheet->setCellValueByColumnAndRow($excel_col, $excel_row, $data);
+        if (isset($cell['rowspan']) && !empty($cell['rowspan'])) {
+          $letter = get_name_from_number($excel_col);
+          $aSheet->mergeCells($letter . $excel_row . ':' . $letter . ((string) ($excel_row + ($cell['rowspan'] - 1))));
+        }
+        if (isset($cell['colspan']) && !empty($cell['colspan'])) {
+          $letter = get_name_from_number($excel_col);
+          $letter_to = get_name_from_number($excel_col + ($cell['colspan'] - 1));
+          $aSheet->mergeCells($letter . $excel_row . ':' . $letter_to . $excel_row);
+        }
+        $excel_col++;
+      }
+
+      $excel_row++;
+      $last_col = $excel_col;
+      $excel_col = 0;
+    }
+  }
+  $aSheet->getStyle( get_name_from_number($first_col) . 2 . ':' . get_name_from_number($last_col) . ($excel_row -1) )
+    ->applyFromArray(array(
+      'borders' => array(
+        'outline' => array(
+          'style' => PHPExcel_Style_Border::BORDER_THIN,
+        ),
+        'inside' => array(
+          'style' => PHPExcel_Style_Border::BORDER_THIN,
+        ),
+      ),
+    ));
+  $excel_col = 0;
+
+  if(is_array($rows) && count($rows)) {
+     foreach ($rows as $number => $row) {
+      if (isset($row['data'])) {
+        foreach ($row as $key => $value) {
+          if ($key == 'data') {
+            $cells = $value;
+          }
+        }
+      }
+      else {
+        $cells = $row;
+      }
+
+      if (count($cells)) {
+        foreach ($cells as $cell) {
+          if(is_array($cell)) {
+            $data = isset($cell['data']) ? $cell['data'] : '';
+          }
+          else {
+            $data = $cell;
+          }
+
+          $data = strip_tags($data);
+          $data = htmlspecialchars_decode($data, ENT_QUOTES);
+          $aSheet->setCellValueByColumnAndRow($excel_col, $excel_row, $data);
+          $excel_col++;
+        }
+        $excel_row++;
+        $excel_col = 0;
+      }
+    }
+  }
+
+
+  include_once(drupal_realpath("{$path}/PHPExcel/Writer/Excel5.php"));
+  $objWriter = new PHPExcel_Writer_Excel5($pExcel);
+  header('Content-Type: application/vnd.ms-excel');
+  header('Content-Disposition: attachment;filename="report.xls"');
+  header('Cache-Control: max-age=0');
+  $objWriter->save('php://output');
+}
+
+/**
+ * Creates string representation of number
+ *
+ * @param int $num - number
+ * @return string
+ */
+function get_name_from_number($num) {
+  $numeric = $num % 26;
+  $letter = chr(65 + $numeric);
+  $num2 = intval($num / 26);
+  if ($num2 > 0) {
+    return get_name_from_number($num2 - 1) . $letter;
+  } else {
+    return $letter;
+  }
+}

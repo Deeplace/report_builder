@@ -1,0 +1,57 @@
+<?php
+
+/**
+ * Implements hook_schema()
+ */
+function report_builder_schema() {
+
+  $schema = array();
+
+  $schema['reports'] = array(
+    'description' => 'List of reports',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary key',
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'query' => array(
+        'description' => 'Reports sql query',
+        'type' => 'text',
+        'not null' => TRUE,
+      ),
+      'machine_name' => array(
+        'description' => 'Report machine name',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+      'title' => array(
+        'description' => 'Report title',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+      'params' => array(
+        'description' => 'Query filtering params',
+        'type' => 'text',
+        'not null' => TRUE,
+      ),
+      'header' => array(
+        'description' => 'Header',
+        'type' => 'text',
+        'not null' => TRUE,
+      ),
+      'fields' => array(
+        'description' => 'fields',
+        'type' => 'text',
+        'not null' => TRUE,
+      )
+    ),
+    'primary key' => array('id'),
+    'unique keys' => array(
+      'machine_name' => array('machine_name')
+    )
+  );
+
+}
