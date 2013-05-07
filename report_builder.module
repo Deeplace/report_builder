@@ -1,13 +1,17 @@
 <?php
 
 function report_builder_autoloader($class) {
-  $path =  drupal_get_path('module', 'report_builder');
-  if(file_exists($path . '/reports/' . $class . '.class.inc')) {
-    include $path . '/reports/' . $class . '.class.inc';
+  $paths = explode(PATH_SEPARATOR, get_include_path());
+
+  foreach ($paths as $path) {
+    if(file_exists($path . DIRECTORY_SEPARATOR . $class . '.inc')) {
+      include $path . DIRECTORY_SEPARATOR . $class . '.inc';
+    }
   }
 }
 
 spl_autoload_register('report_builder_autoloader');
+
 
 /**
  * Implements hook_menu()
@@ -15,45 +19,24 @@ spl_autoload_register('report_builder_autoloader');
 function report_builder_menu() {
   $items = array();
 
+  $items['admin/settings/report-list'] = array(
+    'title' => 'Report list',
+    'description' => 'Report list page',
+    'page callback'=> 'drupal_get_form',
+    'page arguments' => array('report_builder_list'),
+    'access arguments' => array('create report'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'report_view.forms.inc',
+  );
+
   $items['admin/settings/report-builder'] = array(
     'title' => 'Report builder',
     'description' => 'Report settings form',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('report_builder_form'),
     'access arguments' => array('create report'),
-    'type' => MENU_NORMAL_ITEM,
-    'file' => 'report_builder.forms.inc'
-  );
-
-
-  $items['reports-view'] = array(
-    'title' => t('Report view'),
-    'description' => 'Report settings form',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('report_view_form'),
-    'access arguments' => array('view report'),
-    'file' => 'report_view.forms.inc',
-	'menu_name' => 'main-menu',
-    'type' => MENU_NORMAL_ITEM,
-   );
- 
-   $items['reports-view/region'] = array(
-    'title' => 'Select region and data',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('report_view_form_region'),
-    'access arguments' => array('view report'),
-	'file' => 'report_view.forms.inc',
     'type' => MENU_CALLBACK,
-  );
-  
-  $items['admin/settings/report-list'] = array(
-    'title' => 'Report list',
-    'description' => 'Report list page',
-	'page callback'=> 'drupal_get_form',
-    'page arguments' => array('report_builder_list'),
-    'access arguments' => array('create report'),
-    'type' => MENU_NORMAL_ITEM,
-	'file' => 'report_view.forms.inc',
+    'file' => 'report_builder.forms.inc'
   );
 
   $items['admin/settings/report/%rep_name/edit'] = array(

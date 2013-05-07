@@ -39,15 +39,15 @@ function report_builder_list() {
   }
 
   return array(
-    'link' => array(
+    'link' => array( //@todo перенести в hook_menu() с типом MENU_LOCAL_ACTION
       '#prefix' => '<div class = "link-wrapper">',
       '#suffix' => '</div>',
       '#theme' => 'link',
       '#text' => t('Add report'),
-      '#path' => '/admin/settings/report-builder',
+      '#path' => 'admin/settings/report-builder',
       '#options' => array(
         'attributes' => array('class' => array('xls-link')),
-        //REQUIRED:
+        //REQUIRED: 
         'html' => FALSE,
       ),
     ),

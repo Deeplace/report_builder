@@ -3,6 +3,14 @@
  * Interface Report
  */
 interface Report {
+
+  /**
+   * Get report identifier (machine name)
+   *
+   * @return string - report machine name
+   */
+  function get_machine_name();
+
   /**
    * Builds report data
    *
@@ -50,6 +58,10 @@ interface Report {
  */
 class Base_Report implements Report {
 
+  public function get_machine_name() {
+    return get_class($this);
+  }
+  
   function get_filter() {
     return array();
   }
@@ -73,14 +85,34 @@ class Base_Report implements Report {
  * Factory class for reports
  */
 class Report_Factory {
+
+  /**
+   * List of directories containing .inc files with report classes
+   */
+  protected $report_paths = array();
+
+  /**
+   * Constructor
+   *
+   * @param string $path
+   *  Path to reports directory
+   * @see spl_autoload()
+   * @link http://us.php.net/manual/en/function.spl-autoload.php
+   */
+  public function __construct($path) {
+    $this->report_paths[] = $path;
+    //Used by spl_autoload()
+    set_include_path(get_include_path() . PATH_SEPARATOR . './' . $path);
+  }
+
   /**
    * Builds list of existing reports
    *
    * @return array
    */
-  public static function get_reports() {
+  public function get_reports() {
     $db_reports = self::db_reports();
-    $file_reports = self::file_reports();
+    $file_reports = $this->file_reports();
     return array_merge($file_reports, $db_reports);
   }
   /**
@@ -102,15 +134,14 @@ class Report_Factory {
   /**
    * Returns list of "handmade" reports
    *
-   * @return array $result - list of reports
+   * @return array $result - list of reports. machine_name => title
    */
-  protected static function file_reports() {
-    $files = file_scan_directory(drupal_get_path('module', 'report_builder') . '/reports', '/(.*)\.class\.inc/');
+  protected function file_reports() {
     $reports = array();
-    foreach ($files as $file) {
-      if ($file->name !== 'report.class') {
-        $name = str_replace('.class', '', $file->name);
-        $class_name = ucfirst($name);
+    foreach ($this->report_paths as $path) {
+      $files = file_scan_directory($path, '/(.*)\.inc/');
+      foreach ($files as $file) {
+        $class_name = ucfirst($file->name);
         $reports[$class_name] = $class_name::$title;
       }
     }
@@ -163,6 +194,10 @@ class Report_Builder implements Report {
       $this->load();
     }
     return $this;
+  }
+
+  public function get_machine_name() {
+    return $this->machine_name;
   }
 
   public function save() {
