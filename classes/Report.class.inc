@@ -121,11 +121,9 @@ class Report_Factory {
    * @return array $result - list of reports
    */
   public static function db_reports() {
-    $query=db_select('reports','n')
-      ->fields('n',array('machine_name','title'))
-      ->execute();
+    $query = db_query("SELECT n.machine_name, n.title FROM {reports} AS n");
     $result = array();
-    foreach ($query as $row) {
+    while ($row = db_fetch_object($query)) {
       $result[$row->machine_name] = $row->title;
     }
     return $result;
@@ -201,33 +199,24 @@ class Report_Builder implements Report {
   }
 
   public function save() {
-    try {
-      $this->params = serialize($this->params);
-      $this->header = serialize($this->header);
-      unset($this->where); //@todo rewrite
-      if ($this->id) {
-        $num_updated = db_update('reports')
-          ->condition('id', $this->id)
-          ->fields((array)$this)
-          ->execute();
-      }
-      else {
-        $this->id = db_insert('reports')
-          ->fields(array_filter((array)$this))
-          ->execute();
-
-      }
-    } catch (PDOException $e) {
-      watchdog('report_builder', 'failed to insert/update report @details', array('@details' => $e->getMessage()), WATCHDOG_ERROR);
+    $this->params = serialize($this->params);
+    $this->header = serialize($this->header);
+    unset($this->where); //@todo rewrite
+    if ($this->id) {
+      $ret = drupal_write_record('reports', $this, 'id');
+    }
+    else {
+      $ret = drupal_write_record('reports', $this);
+    }
+    if ($ret == FALSE) {
+      watchdog('report_builder', 'failed to insert/update report @details', array('@details' => '', WATCHDOG_ERROR));
       throw new Exception('failed to insert/update report');
     }
     watchdog('report_builder', 'Report inserted successfully @details', array('@details' => $this->id), WATCHDOG_NOTICE);
   }
 
   public function delete(){
-    $num_deleted = db_delete('reports')
-      ->condition('machine_name', $this->machine_name)
-      ->execute();
+    $num_deleted = db_query("DELETE FROM {reports} WHERE machine_name = '%s'", $this->machine_name);
 
     if (!$num_deleted) {
       watchdog('report_builder', 'Failed to delete report @details', array('@details' => var_export($this, TRUE)), WATCHDOG_ERROR);
@@ -239,11 +228,7 @@ class Report_Builder implements Report {
   }
    
   protected function load() {
-    $report = db_select('reports', 'r')
-      ->fields('r')
-      ->condition('machine_name', $this->machine_name)
-      ->execute()
-      ->fetchObject();
+    $report = db_fetch_object(db_query("SELECT * FROM {reports} AS r WHERE machine_name = %s", $this->machine_name));
     if (!$report) {
       throw new Exception('Report does not exists in database');
     }
@@ -284,14 +269,14 @@ class Report_Builder implements Report {
     $params = array();
     if (!empty($this->where)) {
       foreach ($this->where as $condition) {
-        $placeholder = ":" . str_replace('.', '_', $condition['name']);
+        $placeholder = '%s';
         if ($condition['operation'] == 'contains') {
-          $result .= ' AND ' . $condition['name'] . " LIKE " . $placeholder;
-          $params[$placeholder] = '%' . db_like($condition['value']) . '%';
+          $result .= ' AND ' . $condition['name'] . " LIKE '%s'";
+          $params[] = '%' . addcslashes($condition['value'], '\%_') . '%';
         }
         else {
-          $result .= ' AND ' . $condition['name'] . " " . $condition['operation'] . " " . $placeholder;
-          $params[$placeholder] = $condition['value'];
+          $result .= ' AND ' . $condition['name'] . " " . $condition['operation'] . " '%s'";
+          $params[] = $condition['value'];
         }
       }
     }

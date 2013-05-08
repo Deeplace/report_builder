@@ -1,4 +1,7 @@
 <?php
+
+define('REPORT_NAME_MAX_LENGTH', 27);
+
 /**
  * Provides possibility to create reports
  */
@@ -10,11 +13,12 @@ function report_builder_form($form, &$form_state, $report = NULL) {
     '#default_value' => isset($report->title) ? $report->title : ''
   );
   $form['machine_name'] = array(
-    '#type' => 'machine_name',
+    '#type' => 'textfield',
     '#title' => t('machine name'),
     '#default_value' => isset($report->machine_name) ? $report->machine_name : '',
-    '#maxlength' => MENU_MAX_MENU_NAME_LENGTH_UI,
+    '#maxlength' => REPORT_NAME_MAX_LENGTH,
     '#description' => t('A unique name to construct the report machine name. It must only contain lowercase letters, numbers and underscores.'),
+    '#element_validate' => array('report_builder_machine_name_validate'),
     '#machine_name' => array(
       'exists' => 'report_builder_machine_name_exists',
       'source' => array('title'),
@@ -166,8 +170,12 @@ function report_builder_params_js($form, $form_state) {
   return $form['params'];
 }
 
+function report_builder_machine_name_validate($form, &$form_state) {
+  die('a');
+}
+
 function report_builder_machine_name_exists($value) {
-  $link_exists = db_query_range("SELECT 1 FROM {reports} WHERE machine_name = :name", 0, 1, array(':name' => $value))->fetchField();
+  $link_exists = db_result(db_query_range("SELECT 1 FROM {reports} WHERE machine_name = '%s'", 0, 1, $value));
 
   return $link_exists;
 }

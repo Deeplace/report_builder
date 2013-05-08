@@ -38,25 +38,14 @@ function report_builder_list() {
     );
   }
 
-  return array(
-    'link' => array( //@todo перенести в hook_menu() с типом MENU_LOCAL_ACTION
-      '#prefix' => '<div class = "link-wrapper">',
-      '#suffix' => '</div>',
-      '#theme' => 'link',
-      '#text' => t('Add report'),
-      '#path' => 'admin/settings/report-builder',
-      '#options' => array(
-        'attributes' => array('class' => array('xls-link')),
-        //REQUIRED: 
-        'html' => FALSE,
-      ),
-    ),
-    'table' => array(
-      '#theme' => 'table',
-      '#header' => $header,
-      '#rows' =>$rows,
-    )
-  );
+  return 
+      '<div class = "link-wrapper">' .
+        l(t('Add report'), 'admin/settings/report-builder', array(
+          'attributes'  => array('class' => array('xls-link')),
+          'html'        => FALSE,
+          )) .
+      '</div>' .
+         theme('table', $header, $rows);
 }
 
 

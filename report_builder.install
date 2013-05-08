@@ -55,3 +55,17 @@ function report_builder_schema() {
   );
 
 }
+
+/**
+ * Implements hook_install()
+ */
+function report_builder_install() {
+  drupal_install_schema('report_builder');
+}
+
+/**
+ * Implements hook_uninstall()
+ */
+function report_builder_uninstall() {
+  drupal_uninstall_schema('report_builder');
+}

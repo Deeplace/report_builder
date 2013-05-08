@@ -1,12 +1,29 @@
 <?php
 
 function report_builder_autoloader($class) {
-  $paths = explode(PATH_SEPARATOR, get_include_path());
+  switch ($class) {
+    case 'Elements_Factory':
+    case 'Elements':
+    case 'Text_Element':
+    case 'Date_Element':
+    case 'Number_Element':
+    case 'List_Element':
+      include 'classes/Elements.class.inc';
+      break;
+    case 'Base_Report':
+    case 'Report':
+    case 'Report_Factory':
+    case 'Report_Builder':
+      include 'classes/Report.class.inc';
+      break;
+    default:
+      $paths = explode(PATH_SEPARATOR, get_include_path());
 
-  foreach ($paths as $path) {
-    if(file_exists($path . DIRECTORY_SEPARATOR . $class . '.inc')) {
-      include $path . DIRECTORY_SEPARATOR . $class . '.inc';
-    }
+      foreach ($paths as $path) {
+        if(file_exists($path . DIRECTORY_SEPARATOR . $class . '.inc')) {
+          include $path . DIRECTORY_SEPARATOR . $class . '.inc';
+        }
+      }
   }
 }
 
@@ -95,15 +112,9 @@ function rep_name_load($rep_name) {
  */
 function report_builder_permission() {
   return array(
-    'create report' => array(
-      'title' => t('Create report'),
-      'description' => t('Allows users to create reports'),
-    ),
-    'view report' => array(
-      'title' => t('View report'),
-      'description' => t('Allows users to view reports'),
-    ),
-  );
+    'create report',
+    'view report'
+    );
 }
 
 /**
@@ -135,7 +146,7 @@ function report_builder_view_report($report) {
     'link' => array(
       '#theme' => 'link',
       '#text' => t('Export excel'),
-      '#path' => current_path(),
+      '#path' => $_GET['q'],
       '#options' => array(
         'attributes' => array('class' => array('xls-link')),
         //REQUIRED:
