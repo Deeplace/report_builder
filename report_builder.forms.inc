@@ -5,7 +5,7 @@ define('REPORT_NAME_MAX_LENGTH', 27);
 /**
  * Provides possibility to create reports
  */
-function report_builder_form($form, &$form_state, $report = NULL) {
+function report_builder_form(&$form_state, $report = NULL) {
   $form['title'] = array(
     '#title' => t('Report title'),
     '#type' => 'textfield',
@@ -171,10 +171,24 @@ function report_builder_params_js($form, $form_state) {
 }
 
 function report_builder_machine_name_validate($form, &$form_state) {
-  die('a');
+  $machine_name = &$form_state['values']['machine_name'];
+  $machine_name =
+       preg_replace( '/' . $form['#machine_name']['replace_pattern'] . '/',
+      $form['#machine_name']['replace'],
+      $machine_name
+      );
+  if (empty($machine_name)) {
+    form_set_error('machine_name', t('Machine name must be non empty'));
+  }
+  if (report_builder_machine_name_exists($machine_name)) {
+    form_set_error('machine_name', t('Machine name @name already exists.', 
+          array('@name' => $machine_name)
+          ));
+  }
 }
 
 function report_builder_machine_name_exists($value) {
+  //@todo - on edit report, this test will fail. Add exception for current one
   $link_exists = db_result(db_query_range("SELECT 1 FROM {reports} WHERE machine_name = '%s'", 0, 1, $value));
 
   return $link_exists;

@@ -39,8 +39,7 @@ function report_builder_menu() {
   $items['admin/settings/report-list'] = array(
     'title' => 'Report list',
     'description' => 'Report list page',
-    'page callback'=> 'drupal_get_form',
-    'page arguments' => array('report_builder_list'),
+    'page callback' => 'report_builder_list',
     'access arguments' => array('create report'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'report_view.forms.inc',
@@ -148,7 +147,7 @@ function report_builder_view_report($report) {
       '#text' => t('Export excel'),
       '#path' => $_GET['q'],
       '#options' => array(
-        'attributes' => array('class' => array('xls-link')),
+        'attributes' => array('class' => 'xls-link'),
         //REQUIRED:
         'html' => FALSE,
         'query' => array('xls' => 1)

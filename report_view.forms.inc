@@ -41,7 +41,7 @@ function report_builder_list() {
   return 
       '<div class = "link-wrapper">' .
         l(t('Add report'), 'admin/settings/report-builder', array(
-          'attributes'  => array('class' => array('xls-link')),
+          'attributes'  => array('class' => 'xls-link'),
           'html'        => FALSE,
           )) .
       '</div>' .
