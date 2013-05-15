@@ -194,6 +194,7 @@ function report_builder_generate_xls($header, $rows, $title) {
     $excel_col = 0;
     $excel_row++;
   }
+
   $first_col = $last_col =  0;
   if(is_array($header) && count($header)) {
     foreach($header as $row) {
@@ -207,18 +208,17 @@ function report_builder_generate_xls($header, $rows, $title) {
 
         $data = strip_tags($data);
         $data = htmlspecialchars_decode($data, ENT_QUOTES);
-        $temp_cell = $aSheet->getCell(get_name_from_number($excel_col) . $excel_row);
 
         foreach ($aSheet->getMergeCells() as $cells) {
+          $temp_cell = $aSheet->getCell(get_name_from_number($excel_col) . $excel_row);
           if ($temp_cell->isInRange($cells)) {
             list($first, $second) = explode(':', $cells);
             if (($range = ord(substr($second, 0, -1)) - ord(substr($first, 0, -1))) == 0) {
               $range = substr($second, -1) - substr($first, -1);
             }
-            $excel_col+=$range;
+            $excel_col += $range;
           }
         }
-
 
         $aSheet->setCellValueByColumnAndRow($excel_col, $excel_row, $data);
         if (isset($cell['rowspan']) && !empty($cell['rowspan'])) {
@@ -230,6 +230,7 @@ function report_builder_generate_xls($header, $rows, $title) {
           $letter_to = get_name_from_number($excel_col + ($cell['colspan'] - 1));
           $aSheet->mergeCells($letter . $excel_row . ':' . $letter_to . $excel_row);
         }
+
         $excel_col++;
       }
 
