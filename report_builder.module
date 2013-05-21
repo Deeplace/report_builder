@@ -319,3 +319,46 @@ function get_name_from_number($num) {
     return $letter;
   }
 }
+
+/**
+ * Implements hook_theme()
+ */
+function report_builder_theme() {
+  return array(
+    'table_elements' => array( 'elements' => NULL)
+  );
+}
+
+/**
+ * Themes form elements in table
+ *
+ * @param array &$elements
+ *  Reference to form elements tree
+ * @return string
+ *  Rendered HTML
+ */
+function theme_table_elements($elements) {
+  //Children count
+  $children     = element_children($elements);
+  $children_cnt = count($children);
+
+  //Column count
+  $cols = isset($elements['#cols']) ? $elements['#cols'] : 3;
+  
+  //Estimate row count
+  $rows_cnt = (int) (($children_cnt % $cols) ? (($children_cnt + $cols - 1) / $cols) : ($children_cnt / $cols));
+  $pos = 0;
+  $rows = array();
+  foreach ($children as $element_id) {
+    if ($elements[$element_id]['#type'] !== 'value') {
+      $pos++;
+      $row = $pos % $rows_cnt;
+      $col = $pos / $rows_cnt;
+      if (!isset($rows[$row])) {
+        $rows[$row] = array();
+      }
+      $rows[$row][$col] = drupal_render($elements[$element_id]);
+    }
+  }
+  return theme('table', array(), $rows);
+}

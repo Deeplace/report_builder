@@ -14,6 +14,7 @@ class Elements_Factory {
       'List_Element' => t('List'),
       'Number_Element' => t('Number'),
       'Text_Element' => t('Text'),
+      'DatePeriod_Element' => t('Date period'),
     );
   }
 }
@@ -27,6 +28,22 @@ abstract class Element {
 
   abstract function getPresentation();
   abstract function getParams();
+
+  /**
+   * Set #default_value property of form element
+   *
+   * @param mixed $default_value
+   *  If Element has child form elements, then $default_value should be an 
+   *  array with values for children.
+   *  Otherwise, it will be #default_value property of form element.
+   * @return Element
+   *  $this object
+   * @access public
+   */
+  public function set_default($default_value) {
+    $this->default = $default_value;
+    return $this;
+  }
 }
 
 class Text_Element extends Element {
@@ -38,11 +55,13 @@ class Text_Element extends Element {
       'element' => array(
         '#type' => 'textfield',
         '#title' => $this->title,
+        '#default_value' => isset($this->default['element']) ? $this->default['element'] : '',
       ),
       'operation' => array(
         '#type' => 'select',
         '#title' => t('Operation'),
         '#options' => $this->getParams(),
+        '#default_value' => isset($this->default['operation']) ? $this->default['operation'] : '',
       )
     );
   }
@@ -65,11 +84,13 @@ class Date_Element extends Element {
         '#type' => 'date_popup',
         '#title' => $this->title,
         '#date_format' => 'd.m.Y',
+        '#default_value' => isset($this->default['element']) ? $this->default['element'] : '',
       ),
       'operation' => array(
         '#type' => 'select',
         '#title' => t('Operation'),
         '#options' => $this->getParams(),
+        '#default_value' => isset($this->default['operation']) ? $this->default['operation'] : '',
       ),
       'type' => array(
         '#type' => 'value',
@@ -82,6 +103,39 @@ class Date_Element extends Element {
   }
 }
 
+class DatePeriod_Element extends Element {
+
+  public function getPresentation($type = 'timestamp') {
+    return array(
+      '#tree' => TRUE,
+      'min_value' => array(
+        '#type' => 'date_popup',
+        '#title' => $this->title,
+        '#date_format' => 'd.m.Y',
+        '#default_value' => isset($this->default['min_value']) ? $this->default['min_value'] : '',
+      ),
+      'max_value' => array(
+        '#type' => 'date_popup',
+        '#title' => t('to'),
+        '#date_format' => 'd.m.Y',
+        '#default_value' => isset($this->default['max_value']) ? $this->default['max_value'] : '',
+      ),
+      'operation' => array(
+        '#type' => 'value',
+        '#value' => 'between',
+      ),
+      'type' => array(
+        '#type' => 'value',
+        '#value' => $type,
+      ),
+    );
+  }
+  public function getParams() {
+    return array('between' => 'between');
+  }
+}
+
+
 class Number_Element extends Element {
 
   public function getPresentation() {
@@ -92,11 +146,13 @@ class Number_Element extends Element {
         '#type' => 'textfield',
         '#title' => $this->title,
         '#element_validate' => array('element_validate_integer'),
+        '#default_value' => isset($this->default['element']) ? $this->default['element'] : '',
       ),
       'operation' => array(
         '#type' => 'select',
         '#title' => t('Operation'),
         '#options' => $this->getParams(),
+        '#default_value' => isset($this->default['operation']) ? $this->default['operation'] : '',
       )
     );
   }
@@ -121,12 +177,14 @@ class List_Element extends Element {
       'element' => array(
         '#type' => 'select',
         '#title' => $this->title,
-        '#options' => $this->options
+        '#options' => $this->options,
+        '#default_value' => isset($this->default['element']) ? $this->default['element'] : '',
       ),
       'operation' => array(
         '#type' => 'select',
         '#title' => t('Operation'),
         '#options' => $this->getParams(),
+        '#default_value' => isset($this->default['operation']) ? $this->default['operation'] : '',
       )
     );
   }

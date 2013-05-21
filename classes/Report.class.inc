@@ -40,7 +40,7 @@ interface Report {
    *       array(5) {
    *         ["name"] => string - filter name for displaying in UI
    *         ["database_name"]=> string - name of field in database
-   *         ["type"] => string - for element type @see Elements.class.inc
+   *         ["type"] => string - for element type @see Elements.class.inc. Text_Element, Date_Element, Number_Element, List_Element
    *         ["options"] => array - Optional. Options for list elements
    *         ["options_is_query"] => 1 or 0 - Optional. Only For List elements in cases when options are created
    *                                          from SQL QUERY
@@ -49,6 +49,18 @@ interface Report {
    * @return array - list of elements for building the filter
    */
   function get_filter();
+
+  /**
+   * Pass data from filter controller to report object
+   *
+   * @param array $where
+   *  List of arrays with keys:
+   *    - name        - filter name
+   *    - value       - user input value for filter
+   *    - operation   - comparison operator between name and value. Like <, >, <=, >=, =
+   * @access public
+   */
+  public function set_where($where);
 }
 
 /**
@@ -56,7 +68,7 @@ interface Report {
  *
  * Base class for Reports
  */
-class Base_Report implements Report {
+abstract class Base_Report implements Report {
 
   public function get_machine_name() {
     return get_class($this);
@@ -65,17 +77,28 @@ class Base_Report implements Report {
   function get_filter() {
     return array();
   }
-
-  function query_data() {
-    return array();
+  
+  public function set_where($where) {
+    $this->where = $where;
   }
-
-  function get_header() {
-    return array();
-  }
-
-  function get_title() {
-    return '';
+  
+  protected function build_where() {
+    $query  = array();
+    $params = array();
+    if (!empty($this->where)) {
+      foreach ($this->where as $condition) {
+        $placeholder = '%s';
+        if ($condition['operation'] == 'contains') {
+          $query[]  = $condition['name'] . " LIKE '%s'";
+          $params[] = '%' . addcslashes($condition['value'], '\%_') . '%';
+        }
+        else {
+          $query[]  = $condition['name'] . " " . $condition['operation'] . " '%s'";
+          $params[] = $condition['value'];
+        }
+      }
+    }
+    return array('where' => join(' AND ', $query), 'params' => $params);
   }
 }
 
@@ -228,7 +251,7 @@ class Report_Builder implements Report {
   }
    
   protected function load() {
-    $report = db_fetch_object(db_query("SELECT * FROM {reports} AS r WHERE machine_name = %s", $this->machine_name));
+    $report = db_fetch_object(db_query("SELECT * FROM {reports} AS r WHERE machine_name = '%s'", $this->machine_name));
     if (!$report) {
       throw new Exception('Report does not exists in database');
     }
@@ -264,6 +287,7 @@ class Report_Builder implements Report {
   function get_title() {
     return $this->title;
   }
+
   protected function build_where() {
     $result = '1=1';
     $params = array();
