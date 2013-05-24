@@ -82,6 +82,16 @@ abstract class Base_Report implements Report {
     $this->where = $where;
   }
   
+  /**
+   * Based on where conditions, build partial query string and associated parameters
+   *
+   * @return array
+   *   Array with properties:
+   *    - string where - string with SQL conditions to be insert after WHERE 
+   *                     keyword in SQL query, with placeholders
+   *    - array params - values of parameters for placeholders in 'where'
+   * @access private
+   */
   protected function build_where() {
     $query  = array();
     $params = array();
@@ -175,6 +185,10 @@ class Report_Factory {
     } catch (Exception $e) {
       if (class_exists($rep_name)) {
         $report = new $rep_name();
+        if (! $report instanceof Report ) {
+          unset($report);
+          $report = FALSE;
+        }
       }
       else {
         $report = FALSE;
