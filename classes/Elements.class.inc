@@ -103,6 +103,32 @@ class Date_Element extends Element {
   }
 }
 
+class DateExact_Element extends Element {
+
+  public function getPresentation($type = 'timestamp') {
+    return array(
+      '#tree' => TRUE,
+      'element' => array(
+        '#type' => 'date_popup',
+        '#title' => $this->title,
+        '#date_format' => 'd.m.Y',
+        '#default_value' => isset($this->default['element']) ? $this->default['element'] : '',
+      ),
+      'operation' => array(
+        '#type' => 'value',
+        '#default_value' => '=',
+      ),
+      'type' => array(
+        '#type' => 'value',
+        '#value' => $type,
+      ),
+    );
+  }
+  public function getParams() {
+    return array('=' => '=', '>' => '>', '<' => '<');
+  }
+}
+
 class DatePeriod_Element extends Element {
 
   public function getPresentation($type = 'timestamp') {
