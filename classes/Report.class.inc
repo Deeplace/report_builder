@@ -73,21 +73,21 @@ abstract class Base_Report implements Report {
   public function get_machine_name() {
     return get_class($this);
   }
-  
+
   function get_filter() {
     return array();
   }
-  
+
   public function set_where($where) {
     $this->where = $where;
   }
-  
+
   /**
    * Based on where conditions, build partial query string and associated parameters
    *
    * @return array
    *   Array with properties:
-   *    - string where - string with SQL conditions to be insert after WHERE 
+   *    - string where - string with SQL conditions to be insert after WHERE
    *                     keyword in SQL query, with placeholders
    *    - array params - values of parameters for placeholders in 'where'
    * @access private
@@ -103,8 +103,17 @@ abstract class Base_Report implements Report {
           $params[] = '%' . addcslashes($condition['value'], '\%_') . '%';
         }
         else {
-          $query[]  = $condition['name'] . " " . $condition['operation'] . " '%s'";
-          $params[] = $condition['value'];
+          if (strtoupper($condition['operation']) == 'BETWEEN') {
+            $query[]  = $condition['name'] . " " . $condition['operation'] . " '%s' AND '%s'";
+            $params[] = array_shift($condition['value']);
+            $params[] = array_shift($condition['value']);
+          } elseif (strtoupper($condition['operation']) == 'IN') {
+            $query[]  = $condition['name'] . " " . $condition['operation'] . " (%s)";
+            $params[] = implode(', ', $condition['value']);
+          } else {
+            $query[]  = $condition['name'] . " " . $condition['operation'] . " '%s'";
+            $params[] = $condition['value'];
+          }
         }
       }
     }
@@ -263,7 +272,7 @@ class Report_Builder implements Report {
 
     watchdog('report_builder', 'Report deleted @details', array('@details' => var_export($this, TRUE)), WATCHDOG_NOTICE);
   }
-   
+
   protected function load() {
     $report = db_fetch_object(db_query("SELECT * FROM {reports} AS r WHERE machine_name = '%s'", $this->machine_name));
     if (!$report) {

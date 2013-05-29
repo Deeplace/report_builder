@@ -33,7 +33,7 @@ abstract class Element {
    * Set #default_value property of form element
    *
    * @param mixed $default_value
-   *  If Element has child form elements, then $default_value should be an 
+   *  If Element has child form elements, then $default_value should be an
    *  array with values for children.
    *  Otherwise, it will be #default_value property of form element.
    * @return Element
@@ -207,6 +207,38 @@ class List_Element extends Element {
       $result[$key] = $value;
     }
     return $result;
+  }
+
+  public function getParams() {
+    return array('=' => '=', '>' => '>', '<' => '<');
+  }
+}
+
+/**
+ * Checkboxes param implementation class.
+ *
+ * @see Element
+ */
+class Checkboxes_Element extends Element {
+
+  protected $options = array();
+
+  public function __construct($vars) {
+    $this->title = $vars['name'];
+    $this->options = $vars['options'];
+  }
+
+  public function getPresentation() {
+    return array(
+      '#tree' => TRUE,
+      '#theme' => 'table_elements',
+      'element' => array(
+        '#type' => 'checkboxes',
+        '#title' => $this->title,
+        '#options' => $this->options,
+        '#default_value' => isset($this->default['element']) ? $this->default['element'] : array(),
+      ),
+    );
   }
 
   public function getParams() {
