@@ -97,22 +97,24 @@ abstract class Base_Report implements Report {
     $params = array();
     if (!empty($this->where)) {
       foreach ($this->where as $condition) {
+        $value = isset($condition['value']) ? $condition['value'] :
+                  (isset($condition['element']) ? $condition['element'] : NULL);
         $placeholder = '%s';
         if ($condition['operation'] == 'contains') {
           $query[]  = $condition['name'] . " LIKE '%s'";
-          $params[] = '%' . addcslashes($condition['value'], '\%_') . '%';
+          $params[] = '%' . addcslashes($value, '\%_') . '%';
         }
         else {
           if (strtoupper($condition['operation']) == 'BETWEEN') {
             $query[]  = $condition['name'] . " " . $condition['operation'] . " '%s' AND '%s'";
-            $params[] = array_shift($condition['value']);
-            $params[] = array_shift($condition['value']);
+            $params[] = array_shift($value);
+            $params[] = array_shift($value);
           } elseif (strtoupper($condition['operation']) == 'IN') {
             $query[]  = $condition['name'] . " " . $condition['operation'] . " (%s)";
-            $params[] = implode(', ', $condition['value']);
+            $params[] = implode(', ', $value);
           } else {
             $query[]  = $condition['name'] . " " . $condition['operation'] . " '%s'";
-            $params[] = $condition['value'];
+            $params[] = $value;
           }
         }
       }
