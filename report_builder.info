@@ -3,6 +3,7 @@ description = Provides possibility to create different reports
 package = DEEPLACE
 version = 6.x-1.0
 core = 6.x
+dependencies[] = date_popup
 
 files[] = classes/Report.class.inc
 files[] = classes/Elements.class.inc
