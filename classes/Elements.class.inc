@@ -152,13 +152,13 @@ class List_Element extends Element {
         '#type' => 'select',
         '#title' => $this->title,
         '#options' => $this->options,
-        '#default_value' => isset($this->defaults) ? $this->defaults['value'] : '',
+        '#default_value' => !empty($this->defaults) ? $this->defaults['value'] : '',
       ),
       'operation' => array(
         '#type' => 'select',
         '#title' => t('Operation'),
         '#options' => $this->getParams(),
-        '#default_value' => isset($this->defaults) ? $this->defaults['operation'] : '',
+        '#default_value' => !empty($this->defaults) ? $this->defaults['operation'] : '',
       ),
       'class' => array(
         '#type' => 'value',
@@ -213,13 +213,13 @@ class Date_Period_Element extends Element {
         '#type' => 'date_popup',
         '#title' => t('From'),
         '#date_format' => 'd.m.Y',
-        '#default_value' => isset($this->defaults) ? date('Y-m-d H:i:s', $this->defaults[0]['value']) : '',
+        '#default_value' => !empty($this->defaults) ? date('Y-m-d H:i:s', $this->defaults[0]['value']) : '',
       ),
       'element_to' => array(
         '#type' => 'date_popup',
         '#title' => t('To'),
         '#date_format' => 'd.m.Y',
-        '#default_value' => isset($this->defaults) ? date('Y-m-d H:i:s', $this->defaults[1]['value']) : '',
+        '#default_value' => !empty($this->defaults) ? date('Y-m-d H:i:s', $this->defaults[1]['value']) : '',
       ),
       'type' => array(
         '#type' => 'value',
