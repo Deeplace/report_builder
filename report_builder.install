@@ -53,5 +53,5 @@ function report_builder_schema() {
       'machine_name' => array('machine_name')
     )
   );
-
+  return $schema;
 }

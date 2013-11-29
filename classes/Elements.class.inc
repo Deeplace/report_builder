@@ -14,6 +14,7 @@ class Elements_Factory {
       'List_Element' => t('List'),
       'Number_Element' => t('Number'),
       'Text_Element' => t('Text'),
+      'Date_Period_Element' => t('Date period'),
     );
   }
 }
@@ -24,9 +25,26 @@ abstract class Element {
   public function __construct($vars) {
     $this->title = $vars['name'];
   }
+  public function setDefaults($value) {
+    $this->defaults = $value;
+    return $this;
+  }
 
   abstract function getPresentation();
   abstract function getParams();
+
+  /**
+   * Creates filter acceptable by Report Builder
+   * @param  array $value
+   * @return array
+   */
+  public static function createFilter($name, $value) {
+    return array(
+      'name' => $name,
+      'value' => $value['type'] !== 'timestamp' ? $value['element'] : strtotime($value['element']),
+      'operation' => $value['operation'],
+    );
+  }
 }
 
 class Text_Element extends Element {
@@ -43,7 +61,11 @@ class Text_Element extends Element {
         '#type' => 'select',
         '#title' => t('Operation'),
         '#options' => $this->getParams(),
-      )
+      ),
+      'class' => array(
+        '#type' => 'value',
+        '#value' => get_class($this),
+      ),
     );
   }
 
@@ -75,6 +97,10 @@ class Date_Element extends Element {
         '#type' => 'value',
         '#value' => $type,
       ),
+      'class' => array(
+        '#type' => 'value',
+        '#value' => get_class($this),
+      ),
     );
   }
   public function getParams() {
@@ -97,7 +123,11 @@ class Number_Element extends Element {
         '#type' => 'select',
         '#title' => t('Operation'),
         '#options' => $this->getParams(),
-      )
+      ),
+      'class' => array(
+        '#type' => 'value',
+        '#value' => get_class($this),
+      ),
     );
   }
   public function getParams() {
@@ -121,13 +151,19 @@ class List_Element extends Element {
       'element' => array(
         '#type' => 'select',
         '#title' => $this->title,
-        '#options' => $this->options
+        '#options' => $this->options,
+        '#default_value' => isset($this->defaults) ? $this->defaults['value'] : '',
       ),
       'operation' => array(
         '#type' => 'select',
         '#title' => t('Operation'),
         '#options' => $this->getParams(),
-      )
+        '#default_value' => isset($this->defaults) ? $this->defaults['operation'] : '',
+      ),
+      'class' => array(
+        '#type' => 'value',
+        '#value' => get_class($this),
+      ),
     );
   }
 
@@ -142,16 +178,123 @@ class List_Element extends Element {
   }
 
   protected function convertOptions($options) {
-    $options = explode("\n", $options);
-    $result = array();
-    foreach ($options as $option) {
-      list($key, $value) = explode('|', $option);
-      $result[$key] = $value;
+    if (is_array($options)) {
+      return $options;
     }
-    return $result;
+    else {
+      $options = explode("\n", $options);
+      $result = array();
+      foreach ($options as $option) {
+        list($key, $value) = explode('|', $option);
+        $result[$key] = $value;
+      }
+      return $result;
+    }
   }
 
   public function getParams() {
     return array('=' => '=', '>' => '>', '<' => '<');
+  }
+}
+
+class Date_Period_Element extends Element {
+  protected $title = '';
+
+  public function __construct($vars) {
+    $this->title = $vars['name'];
+  }
+
+  public function getPresentation($type = 'timestamp') {
+    return array(
+      '#tree' => TRUE,
+      '#theme' => 'table_elements',
+      '#cols' => 4,
+      'element_from' => array(
+        '#type' => 'date_popup',
+        '#title' => t('From'),
+        '#date_format' => 'd.m.Y',
+        '#default_value' => isset($this->defaults) ? date('Y-m-d H:i:s', $this->defaults[0]['value']) : '',
+      ),
+      'element_to' => array(
+        '#type' => 'date_popup',
+        '#title' => t('To'),
+        '#date_format' => 'd.m.Y',
+        '#default_value' => isset($this->defaults) ? date('Y-m-d H:i:s', $this->defaults[1]['value']) : '',
+      ),
+      'type' => array(
+        '#type' => 'value',
+        '#value' => $type,
+      ),
+      'class' => array(
+        '#type' => 'value',
+        '#value' => get_class($this),
+      ),
+    );
+  }
+  public function getParams() {
+    return array();
+  }
+
+  public static function createFilter($name, $value) {
+    return
+      array(
+        array(
+          'name' => $name,
+          'value' => $value['type'] !== 'timestamp' ? $value['element_from'] : strtotime($value['element_from']),
+          'operation' => '>',
+        ),
+        array(
+          'name' => $name,
+          'value' => $value['type'] !== 'timestamp' ? $value['element_to'] : strtotime($value['element_to']),
+          'operation' => '<',
+        ),
+      );
+  }
+}
+
+class Complex_List_Element extends Element {
+ protected $options = array();
+
+  public function __construct($vars) {
+    $this->title = $vars['name'];
+    $this->callback = $vars['populate_callback'];
+    $this->options = $vars['options'];
+  }
+
+  public function getPresentation() {
+    return array(
+      '#tree' => TRUE,
+      '#theme' => 'table_elements',
+      'element' => array(
+        '#type' => 'select',
+        '#title' => $this->title,
+        '#options' => $this->options
+      ),
+      'class' => array(
+        '#type' => 'value',
+        '#value' => get_class($this),
+      ),
+      'callback' => array(
+        '#type' => 'value',
+        '#value' => $this->callback,
+      )
+    );
+  }
+
+  public function getParams() {
+    return array();
+  }
+
+  /**
+   * Creates filter acceptable by Report Builder
+   * @param  array $value
+   * @return array
+   */
+  public static function createFilter($name, $value) {
+    return array(
+      'name' => $name,
+      'value' => $value['callback']($value['element']),
+      'operation' => 'IN',
+    );
   }
 }

@@ -112,7 +112,7 @@ function report_builder_form($form, &$form_state, $report = NULL) {
     '#type' => 'submit',
     '#value' => t('Submit'),
   );
- 
+
   return $form;
 }
 

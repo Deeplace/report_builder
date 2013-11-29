@@ -49,6 +49,18 @@ interface Report {
    * @return array - list of elements for building the filter
    */
   function get_filter();
+
+  /**
+   * Stores conditions array in class properties.
+   * @param array $where - Condition array. Format:
+   *  [0]=>
+   *    array(3) {
+   *       ["name"] => string "date" - field name in database
+   *       ["value"] => mixed - value to applied
+   *       ["operation"] => string to be applied, ex "=", ">", "<", "<>"
+   *  }
+   */
+  function set_where($where);
 }
 
 /**
@@ -61,7 +73,7 @@ class Base_Report implements Report {
   public function get_machine_name() {
     return get_class($this);
   }
-  
+
   function get_filter() {
     return array();
   }
@@ -76,6 +88,10 @@ class Base_Report implements Report {
 
   function get_title() {
     return '';
+  }
+
+  function set_where($where) {
+    return array();
   }
 }
 
@@ -237,7 +253,7 @@ class Report_Builder implements Report {
 
     watchdog('report_builder', 'Report deleted @details', array('@details' => var_export($this, TRUE)), WATCHDOG_NOTICE);
   }
-   
+
   protected function load() {
     $report = db_select('reports', 'r')
       ->fields('r')

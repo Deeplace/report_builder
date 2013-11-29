@@ -60,8 +60,8 @@ function report_builder_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'report_view.forms.inc'
   );
-  
-  
+
+
   $items['reports/%rep_name/filter-form'] = array(
     'title' => 'Report filter',
     'description' => 'Report filter form',
