@@ -124,7 +124,7 @@ function report_builder_view_report($report) {
     drupal_set_title($report->get_title());
     $data = $report->query_data();
     $header = $report->get_header();
-    if ($_GET['xls'] == 1) {
+    if (!empty($_GET['xls'])) {
       report_builder_generate_xls($header, $data, $report->title);
       return;
     }
