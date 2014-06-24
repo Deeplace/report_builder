@@ -79,6 +79,16 @@ function report_builder_menu() {
     'access arguments' => array('view report'),
     'type' => MENU_CALLBACK,
   );
+  
+  $items['build-report/%rep_name'] = array(
+    'title' => 'Report',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('report_builder_view_form', 1),
+    'access arguments' => array('view report'),
+    'type' => MENU_CALLBACK,
+    'file' => 'report_builder.forms.inc',
+  );
+  
   return $items;
 }
 

@@ -207,3 +207,125 @@ function report_builder_filter_form_submit($form, &$form_state) {
   $form_state['redirect'] = array('reports/'.arg(1).'/view');
 }
 
+function report_builder_view_form($form, &$form_state, $report) {
+  $form['#report'] = $report;
+  
+  $form['params'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Parameters'),
+    '#collapsible' => TRUE,
+    '#collapsed' => !empty($_GET['go']),
+  );
+  
+  $params = array(
+    'limit' => empty($_GET['limit']) ? 20 : (int) $_GET['limit'],
+  );
+  
+  foreach ($report->get_filter() as $name => $element) {
+    if ($element['type'] == 'checkboxes') {
+      $params[$name] = empty($_GET[$name]) ? '' : explode('|', $_GET[$name]);
+    }
+    else {
+      $params[$name] = empty($_GET[$name]) ? '' : $_GET[$name];
+    }
+    
+    $form['params'][$name] = array(
+      '#type' => $element['type'],
+      '#title' => $element['name'],
+    );
+    
+    if ($element['type'] == 'date_popup') {
+      $form['params'][$name]['#date_label_position'] = 'invisible';
+      $form['params'][$name]['#date_format'] = 'd.m.Y';
+      $form['params'][$name]['#date_year_range'] = '-10:3';
+    }
+    if (!empty($element['options'])) {
+      $form['params'][$name]['#options'] = $element['options'];
+    }
+    
+    if (!empty($params[$name])) {
+      $form['params'][$name]['#default_value'] = $params[$name];
+    }
+  }
+  
+  $form['params']['limit'] = array(
+    '#type' => 'select',
+    '#title' => t('Elements on page'),
+    '#title_display' => 'before',
+    '#options' => array(
+      20 => 20,
+      50 => 50,
+      100 => 100,
+    ),
+    '#default_value' => $params['limit'],
+  );
+  
+  $form['params']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
+  
+  if (!empty($_GET['go'])) {
+    $query = $_GET;
+    unset($query['q']);
+    $form['export'] = array(
+      '#theme' => 'item_list',
+      '#items' => array(
+        l(t('Print version'), $_GET['q'], array('query' => $query + array('print' => 1))),
+        l(t('Export to Excel'), $_GET['q'], array('query' => $query + array('xls' => 1))),
+      ),
+    );
+    
+    if (!empty($_GET['xls']) || !empty($_GET['print'])) {
+      unset($params['limit']);
+    }
+    
+    $report->set_where($params);
+    $header = $report->get_header();
+    $rows = $report->query_data();
+    
+    if (!empty($_GET['xls'])) {
+      report_builder_generate_xls(array($header), $rows);
+    }
+    
+    $form['results'] = array(
+      '#theme' => 'table',
+      '#header' => $header,
+      '#rows' => $rows,
+      '#empty' => t('Report has no data.'),
+    );
+    
+    $form['pager'] = array(
+      '#theme' => 'pager',
+    );
+    
+    if (!empty($_GET['print'])) {
+      unset($form['params'], $form['export'], $form['pager']);
+    }
+  }
+  
+  return $form;
+}
+
+function report_builder_view_form_submit($form, &$form_state) {
+  $report = $form['#report'];
+  $query = array();
+  
+  //Build filter data
+  foreach ($report->get_filter() as $name => $element) {
+    if (!empty($form_state['values'][$name])) {
+      if ($element['type'] == 'date_popup') {
+        $query[$name] = $form_state['values'][$name];
+      }
+      elseif (is_array($form_state['values'][$name])) {
+        $query[$name] = implode('|', array_filter($form_state['values'][$name]));
+      }
+      else {
+        $query[$name] = $form_state['values'][$name];
+      }
+    }
+  }
+  $query['limit'] = $form_state['values']['limit'];
+  $query['go'] = 1;
+  $form_state['redirect'] = array($_GET['q'] , array('query' => $query));
+}
