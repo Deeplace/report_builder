@@ -208,6 +208,8 @@ function report_builder_filter_form_submit($form, &$form_state) {
 }
 
 function report_builder_view_form($form, &$form_state, $report) {
+  drupal_set_title($report->get_title());
+  
   $form['#report'] = $report;
   
   $form['params'] = array(
